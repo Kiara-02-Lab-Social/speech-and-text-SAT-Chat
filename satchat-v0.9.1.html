@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SatChat v0.9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+:root{
+  --bg:#e8e4dd;--app:#f2efe9;--chat:#ebe7df;
+  --hdr:#2d3a32;--fg:#edf5ef;
+  --bo:#d6eedd;--bob:#a8cdb8;
+  --bi:#ffffff;--bib:#e0ddd7;
+  --ao:#c2e0ce;--aob:#8ebda8;
+  --ai:#eeece7;--aib:#d0cdc6;
+  --acc:#3e7358;--acc-hi:#4f9470;--acc-dim:#d6eedd;
+  --red:#b94040;--purp:#6044a0;--purp-bg:#f0ecfc;--purp-b:#c8b8f0;
+  --blue:#185fa5;--blue-bg:#e6f1fb;
+  --t1:#1a1c19;--t2:#4e5450;--t3:#9a9e99;
+  --ibg:#f5f3ee;--ib:#ccc9c2;
+  --sans:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;
+  --rb:18px;--focus:0 0 0 3px rgba(62,115,88,.35);
+}
+body{background:var(--bg);font-family:var(--sans);color:var(--t1);display:flex;align-items:center;justify-content:center;}
+#app{width:100%;max-width:430px;height:100vh;max-height:860px;background:var(--app);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.13);position:relative;animation:appIn .45s cubic-bezier(.22,1,.36,1) both;}
+@keyframes appIn{from{opacity:0;transform:translateY(14px) scale(.98);}to{opacity:1;transform:none;}}
+
+/* ── Header ── */
+#hdr{background:var(--hdr);color:var(--fg);padding:0 11px;height:56px;display:flex;align-items:center;gap:7px;flex-shrink:0;z-index:3;}
+.av{width:32px;height:32px;border-radius:50%;background:var(--acc-hi);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#fff;flex-shrink:0;}
+.hi{flex:1;min-width:0;}
+.hi h1{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hi p{font-size:9px;color:rgba(237,245,239,.42);font-family:var(--mono);}
+#wv{width:40px;height:18px;opacity:0;transition:opacity .3s;flex-shrink:0;}
+#wv.on{opacity:1;}
+#eb{font-size:8px;font-family:var(--mono);font-weight:500;padding:2px 5px;border-radius:99px;letter-spacing:.04em;flex-shrink:0;}
+#eb.nat{background:rgba(111,207,143,.18);color:#6fcf8f;}
+#eb.whi{background:rgba(79,148,112,.25);color:#9fe1cb;}
+#eb.off{background:rgba(237,245,239,.07);color:rgba(237,245,239,.3);}
+#tb{font-size:7px;font-family:var(--mono);font-weight:500;padding:2px 5px;border-radius:99px;letter-spacing:.04em;flex-shrink:0;transition:background .4s,color .4s;}
+#tb.chrome{background:rgba(66,133,244,.22);color:#7ab8f5;}
+#tb.oai{background:rgba(155,130,200,.22);color:#c0a8e8;}
+#tb.none{background:rgba(237,245,239,.07);color:rgba(237,245,239,.3);}
+
+/* lang toggle */
+#lt{display:flex;background:rgba(255,255,255,.1);border-radius:99px;padding:2px;flex-shrink:0;}
+.lb{border:none;background:none;color:rgba(237,245,239,.5);font-size:9px;font-family:var(--mono);font-weight:500;padding:3px 7px;border-radius:99px;cursor:pointer;transition:background .2s,color .2s;line-height:1;white-space:nowrap;}
+.lb.on{background:rgba(255,255,255,.18);color:var(--fg);}
+.lb:focus{outline:none;box-shadow:var(--focus);}
+
+/* read-all */
+#ra{background:none;border:none;color:rgba(237,245,239,.62);cursor:pointer;padding:4px 6px;border-radius:6px;display:flex;align-items:center;gap:3px;transition:color .2s,background .2s;flex-shrink:0;}
+#ra:hover{color:var(--fg);background:rgba(255,255,255,.1);}
+#ra:focus{outline:none;box-shadow:var(--focus);}
+#ra.on{color:#6fcf8f;animation:raP .8s ease-in-out infinite alternate;}
+@keyframes raP{from{opacity:.6;}to{opacity:1;}}
+#ra-l{font-size:8px;font-family:var(--mono);letter-spacing:.04em;}
+
+/* settings */
+#sb{background:none;border:none;color:rgba(237,245,239,.62);cursor:pointer;padding:5px;border-radius:50%;flex-shrink:0;transition:color .2s,background .2s,transform .35s cubic-bezier(.34,1.56,.64,1);}
+#sb:hover{color:var(--fg);background:rgba(255,255,255,.1);}
+#sb:focus{outline:none;box-shadow:var(--focus);}
+#sb.open{transform:rotate(90deg);}
+
+/* ── Drawer ── */
+#dr{background:#fff;border-bottom:1px solid var(--ib);overflow:hidden;max-height:0;opacity:0;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .22s;flex-shrink:0;z-index:2;}
+#dr.open{max-height:300px;opacity:1;}
+.di{padding:12px 13px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:300px;}
+.dl{font-size:10px;font-family:var(--mono);color:var(--t3);letter-spacing:.06em;text-transform:uppercase;}
+.dr2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.dr2 input[type=password],.dr2 select{flex:1;min-width:88px;border:1px solid var(--ib);border-radius:8px;background:var(--ibg);color:var(--t1);padding:4px 8px;font-size:11px;font-family:var(--mono);}
+.dr2 input:focus,.dr2 select:focus{outline:none;border-color:var(--acc);box-shadow:var(--focus);}
+.db{font-size:10px;font-family:var(--mono);padding:4px 9px;border-radius:8px;border:1px solid var(--ib);background:var(--ibg);color:var(--t2);cursor:pointer;transition:background .15s;}
+.db:hover{background:var(--ib);}.db:focus{outline:none;box-shadow:var(--focus);}
+.db.sv{background:var(--acc);color:#fff;border-color:var(--acc);}.db.sv:hover{background:var(--acc-hi);}
+.dh{font-size:10px;color:var(--t3);font-family:var(--mono);}.dh a{color:var(--acc);}
+.dc{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t2);font-family:var(--mono);}.dc input{accent-color:var(--acc);}
+.dr2 input[type=range]{flex:1;accent-color:var(--acc);}
+#ro{font-size:10px;color:var(--t2);font-family:var(--mono);min-width:26px;}
+.dd{height:1px;background:var(--ib);}
+.tr-status{font-size:10px;font-family:var(--mono);padding:5px 8px;border-radius:8px;border:1px solid var(--ib);background:var(--ibg);color:var(--t2);line-height:1.5;}
+.tr-status.chrome{border-color:#85b7eb;background:var(--blue-bg);color:var(--blue);}
+.tr-status.oai{border-color:var(--purp-b);background:var(--purp-bg);color:var(--purp);}
+
+/* ── Log ── */
+#log{flex:1;overflow-y:auto;background:var(--chat);padding:12px 10px 6px;display:flex;flex-direction:column;gap:4px;scroll-behavior:smooth;}
+#log::-webkit-scrollbar{width:3px;}
+#log::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px;}
+#emp{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:36px 24px;color:var(--t3);font-size:13px;pointer-events:none;animation:fu .6s .15s both;}
+.ei{font-size:38px;opacity:.3;animation:fi 3s ease-in-out infinite;}
+@keyframes fi{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+@keyframes fu{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.dc2{align-self:center;font-size:9px;font-family:var(--mono);color:var(--t3);background:rgba(175,172,165,.28);border-radius:99px;padding:2px 10px;margin:4px 0;}
+
+/* bubble rows */
+.brow{display:flex;flex-direction:column;max-width:82%;gap:2px;animation:bi .27s cubic-bezier(.22,1,.36,1) both;}
+.brow.s{align-self:flex-end;align-items:flex-end;}
+.brow.r{align-self:flex-start;align-items:flex-start;}
+@keyframes bi{from{opacity:0;transform:translateY(8px) scale(.97);}to{opacity:1;transform:none;}}
+
+/* text bubble */
+.tb{padding:8px 12px 7px;font-size:14px;line-height:1.45;word-break:break-word;transition:transform .14s;}
+.tb:hover{transform:scale(1.01);}
+.brow.s .tb{background:var(--bo);border:1px solid var(--bob);border-radius:var(--rb) var(--rb) 4px var(--rb);}
+.brow.r .tb{background:var(--bi);border:1px solid var(--bib);border-radius:var(--rb) var(--rb) var(--rb) 4px;}
+
+/* inline translation strip */
+.tr-strip{
+  display:none;flex-direction:column;gap:2px;
+  padding:5px 10px;margin-top:1px;border-radius:8px;
+  animation:fadeIn .22s both;
+  font-size:12px;line-height:1.45;
+}
+.tr-strip.on{display:flex;}
+.brow.s .tr-strip{background:rgba(62,115,88,.08);}
+.brow.r .tr-strip{background:rgba(80,80,75,.07);}
+.tr-text{color:var(--t2);font-style:italic;word-break:break-word;}
+.tr-meta{display:flex;align-items:center;gap:5px;}
+.tr-badge{font-size:8px;font-family:var(--mono);padding:1px 5px;border-radius:99px;font-weight:500;white-space:nowrap;}
+.tr-badge.chrome{background:rgba(66,133,244,.13);color:#185fa5;}
+.tr-badge.oai{background:rgba(96,68,160,.13);color:var(--purp);}
+.tr-badge.none{background:rgba(154,158,153,.15);color:var(--t3);}
+.tr-src{font-size:9px;color:var(--t3);font-family:var(--mono);}
+.tr-loading{display:flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);color:var(--t3);padding:3px 0;}
+.spin{animation:sp .8s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* audio bubble */
+.ab{padding:9px 11px 8px;min-width:185px;max-width:255px;display:flex;flex-direction:column;gap:0;transition:transform .14s;}
+.ab:hover{transform:scale(1.01);}
+.brow.s .ab{background:var(--ao);border:1px solid var(--aob);border-radius:var(--rb) var(--rb) 4px var(--rb);}
+.brow.r .ab{background:var(--ai);border:1px solid var(--aib);border-radius:var(--rb) var(--rb) var(--rb) 4px;}
+.abt{display:flex;align-items:center;gap:8px;padding-bottom:7px;}
+.pbtn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:transform .15s,filter .15s;}
+.pbtn:focus{outline:none;box-shadow:var(--focus);}
+.pbtn:active{transform:scale(.92);}
+.pbtn:hover{transform:scale(1.08);}
+.brow.s .pbtn{background:var(--acc);color:#fff;}
+.brow.r .pbtn{background:var(--t2);color:#fff;}
+.pbtn.playing{animation:pp .55s ease-in-out infinite alternate;}
+@keyframes pp{from{filter:brightness(1);}to{filter:brightness(1.22);}}
+.abars{flex:1;display:flex;align-items:center;gap:1.5px;height:20px;overflow:hidden;}
+.abar{width:2.5px;border-radius:2px;}
+.brow.s .abar{background:rgba(25,70,50,.3);}
+.brow.r .abar{background:rgba(70,70,65,.25);}
+.abar.lit{background:var(--acc)!important;}
+.adur{font-size:10px;font-family:var(--mono);}
+.brow.s .adur{color:rgba(25,70,50,.55);}
+.brow.r .adur{color:var(--t3);}
+
+/* transcribe + translation section */
+.abx{border-top:1px solid rgba(0,0,0,.06);padding-top:7px;display:flex;flex-direction:column;gap:5px;}
+.brow.s .abx{border-top-color:rgba(25,70,50,.1);}
+.brow.r .abx{border-top-color:rgba(70,70,65,.09);}
+.xbtn{font-size:10px;font-family:var(--mono);font-weight:500;padding:3px 9px;border-radius:99px;border:none;cursor:pointer;white-space:nowrap;align-self:flex-start;transition:background .18s,transform .12s;}
+.xbtn:focus{outline:none;box-shadow:var(--focus);}
+.xbtn:active{transform:scale(.94);}
+.brow.s .xbtn{background:rgba(25,70,50,.12);color:rgba(25,70,50,.8);}
+.brow.s .xbtn:hover{background:rgba(25,70,50,.22);}
+.brow.r .xbtn{background:rgba(70,70,65,.1);color:var(--t2);}
+.brow.r .xbtn:hover{background:rgba(70,70,65,.2);}
+.xbtn.busy{opacity:.55;cursor:wait;}
+.xbtn.done{background:var(--purp-bg);color:var(--purp);border:1px solid var(--purp-b);}
+.xtxt{font-size:13px;line-height:1.45;color:var(--t2);display:none;word-break:break-word;animation:fadeIn .22s both;}
+.xtxt.on{display:block;}
+.x-tr-strip{display:none;flex-direction:column;gap:2px;animation:fadeIn .22s both;}
+.x-tr-strip.on{display:flex;}
+.x-tr-text{font-size:12px;color:var(--t2);font-style:italic;line-height:1.45;word-break:break-word;}
+
+/* bubble meta */
+.bm{display:flex;align-items:center;gap:4px;font-size:9px;font-family:var(--mono);color:var(--t3);padding:0 2px;}
+.bp{font-size:8px;font-family:var(--mono);font-weight:500;padding:1px 5px;border-radius:99px;}
+.bp.vn{background:#b8e6d0;color:#1d5c3a;}
+.bp.wh{background:#c6ebd4;color:#2e6647;}
+.bp.tx{background:#dde8f2;color:#2e4d6a;}
+.spk{background:none;border:none;cursor:pointer;font-size:10px;color:var(--t3);padding:2px 4px;border-radius:4px;transition:color .14s,transform .14s;line-height:1;}
+.spk:hover{color:var(--acc);transform:scale(1.15);}
+.spk:focus{outline:none;box-shadow:var(--focus);}
+.spk.on{color:var(--acc);animation:spkP .7s ease-in-out infinite alternate;}
+@keyframes spkP{from{opacity:.4;}to{opacity:1;}}
+
+/* interim */
+#ir{display:none;align-self:flex-end;align-items:flex-end;flex-direction:column;max-width:82%;gap:2px;}
+#ir.on{display:flex;}
+#ib2{background:var(--bo);border:1px dashed var(--bob);border-radius:var(--rb) var(--rb) 4px var(--rb);padding:8px 12px 7px;font-size:14px;line-height:1.45;color:var(--t2);font-style:italic;word-break:break-word;opacity:.85;}
+#il{display:flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono);color:var(--t3);padding:0 2px;}
+.ld{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:ldp .9s ease-in-out infinite;}
+@keyframes ldp{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+#sr2{display:none;align-items:center;gap:4px;}
+#sr2.on{display:flex;}
+.st{font-size:9px;font-family:var(--mono);color:var(--t3);}
+#sa{stroke-dasharray:34.6;stroke-dashoffset:34.6;transition:stroke-dashoffset .08s linear;stroke-linecap:round;}
+
+/* typing */
+#typ{align-self:flex-start;padding:7px 12px;background:var(--bi);border:1px solid var(--bib);border-radius:var(--rb) var(--rb) var(--rb) 4px;display:none;align-items:center;gap:3px;}
+#typ.on{display:flex;}
+.td{width:5px;height:5px;border-radius:50%;background:var(--t3);animation:tdB 1.1s infinite ease-in-out;}
+.td:nth-child(2){animation-delay:.18s;}.td:nth-child(3){animation-delay:.36s;}
+@keyframes tdB{0%,80%,100%{transform:translateY(0);opacity:.5;}40%{transform:translateY(-5px);opacity:1;}}
+
+#scb{position:absolute;bottom:68px;right:12px;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;transform:translateY(6px);box-shadow:0 2px 10px rgba(62,115,88,.3);z-index:5;}
+#scb.on{opacity:1;pointer-events:auto;transform:none;}
+#scb:focus{outline:none;box-shadow:var(--focus);}
+
+/* ── Compose ── */
+#cmp{background:#fff;border-top:1px solid var(--ib);padding:7px 10px 9px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+#cs{font-size:9px;font-family:var(--mono);color:var(--acc);min-height:0;overflow:hidden;max-height:0;transition:max-height .2s,opacity .2s;opacity:0;padding:0 3px;display:flex;align-items:center;gap:5px;}
+#cs.on{max-height:15px;opacity:1;}
+#cr{display:flex;align-items:flex-end;gap:6px;}
+#ti{flex:1;background:var(--ibg);border:1px solid var(--ib);border-radius:22px;color:var(--t1);padding:8px 14px;font-size:14px;font-family:var(--sans);resize:none;max-height:100px;overflow-y:auto;line-height:1.4;transition:border-color .2s,box-shadow .2s;}
+#ti:focus{outline:none;border-color:var(--acc);box-shadow:var(--focus);}
+#ti::placeholder{color:var(--t3);}
+.ib{width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:background .15s,transform .15s;}
+.ib:focus{outline:none;box-shadow:var(--focus);}
+.ib:active{transform:scale(.9)!important;}
+#sndbtn{background:var(--acc);color:#fff;}
+#sndbtn:hover{background:var(--acc-hi);transform:scale(1.06);}
+#sndbtn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
+#micbtn{background:var(--ibg);border:1px solid var(--ib);color:var(--t2);position:relative;overflow:hidden;}
+#micbtn:hover:not(.rec){background:var(--acc-dim);transform:scale(1.06);}
+#micbtn.rec{background:var(--red);border-color:var(--red);color:#fff;}
+#micbtn.rec::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--red);animation:rp 1s ease-out infinite;}
+#micbtn.xc{background:#b07030;border-color:#b07030;color:#fff;cursor:wait;}
+@keyframes rp{0%{transform:scale(1);opacity:.8;}100%{transform:scale(1.65);opacity:0;}}
+.rip{position:absolute;border-radius:50%;width:100%;height:100%;background:rgba(255,255,255,.45);animation:ra .38s ease-out forwards;pointer-events:none;}
+@keyframes ra{0%{transform:scale(0);opacity:.5;}100%{transform:scale(3);opacity:0;}}
+.sr-only{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+</style>
+</head>
+<body>
+<div class="sr-only" id="ann" role="status" aria-live="polite" aria-atomic="true"></div>
+<a class="sr-only" href="#ti">Skip to compose</a>
+<div id="app" role="main">
+
+  <header id="hdr">
+    <div class="av" aria-hidden="true">SC</div>
+    <div class="hi"><h1>SatChat</h1><p id="hs">initialising…</p></div>
+    <canvas id="wv" aria-hidden="true" width="40" height="18"></canvas>
+    <span id="eb" class="off" aria-hidden="true">—</span>
+    <span id="tb" class="none" aria-hidden="true">TR</span>
+    <div id="lt" role="group" aria-label="Mother tongue">
+      <button class="lb on" id="ben" aria-pressed="true">EN</button>
+      <button class="lb" id="bja" aria-pressed="false">日本語</button>
+    </div>
+    <button id="ra" aria-label="Read all messages aloud">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <span id="ra-l">READ ALL</span>
+    </button>
+    <button id="sb" aria-expanded="false" aria-controls="dr" aria-label="Settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div id="dr" role="region" aria-label="Settings" hidden>
+    <div class="di">
+      <p class="dl">Translation engine</p>
+      <div class="tr-status" id="tr-status-box">Detecting Chrome AI…</div>
+      <p class="dl" style="margin-top:2px;">OpenAI key (Whisper STT + translation fallback)</p>
+      <div class="dr2">
+        <input type="password" id="ki" placeholder="sk-… (optional)" autocomplete="off" spellcheck="false" aria-label="OpenAI API key"/>
+        <button class="db sv" id="ks">Save</button>
+        <button class="db" id="kc">Clear</button>
+      </div>
+      <p class="dh">Chrome AI = free, on-device, offline after first download. Needs Chrome 138+ desktop + flags enabled. <a href="chrome://flags/#language-detection-api" target="_blank" rel="noopener">chrome://flags →</a></p>
+      <div class="dd"></div>
+      <p class="dl">Auto-send silence</p>
+      <div class="dr2">
+        <select id="ss" aria-label="Silence timeout">
+          <option value="0">Off</option>
+          <option value="2000">2 seconds</option>
+          <option value="3000" selected>3 seconds</option>
+          <option value="5000">5 seconds</option>
+        </select>
+      </div>
+      <div class="dd"></div>
+      <p class="dl">Voice output</p>
+      <div class="dr2"><select id="vs" aria-label="TTS voice" style="flex:1;"></select></div>
+      <div class="dr2">
+        <span style="font-size:10px;font-family:var(--mono);color:var(--t2);min-width:44px;">Speed</span>
+        <input type="range" id="rs" min="0.5" max="2.0" step="0.1" value="1.0" aria-label="Speed"/>
+        <span id="ro">1.0×</span>
+      </div>
+      <div class="dc">
+        <input type="checkbox" id="asp" checked aria-label="Auto-speak text messages"/>
+        <label for="asp">Auto-speak text messages</label>
+      </div>
+      <div class="dc">
+        <input type="checkbox" id="atr" checked aria-label="Auto-translate received messages"/>
+        <label for="atr">Auto-translate received messages</label>
+      </div>
+      <div class="dr2" style="gap:5px;">
+        <button class="db" id="tv">Test voice</button>
+        <button class="db" id="sv2">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="log" role="log" aria-live="polite" aria-label="Conversation" tabindex="0">
+    <div id="emp" role="note">
+      <div class="ei" aria-hidden="true">💬</div>
+      <p id="ep1">No messages yet.</p>
+      <p id="ep2" style="font-size:10px;font-family:var(--mono);margin-top:3px;">Hold 🎤 for voice · type to text.</p>
+    </div>
+    <div id="ir" aria-hidden="true">
+      <div id="ib2"></div>
+      <div id="il">
+        <span class="ld"></span>
+        <span id="itxt">listening…</span>
+        <div id="sr2">
+          <svg width="13" height="13" viewBox="0 0 13 13" style="transform:rotate(-90deg)" aria-hidden="true">
+            <circle cx="6.5" cy="6.5" r="5" fill="none" stroke="rgba(154,158,153,.2)" stroke-width="2"/>
+            <circle id="sa" cx="6.5" cy="6.5" r="5" fill="none" stroke="var(--acc)" stroke-width="2"/>
+          </svg>
+          <span class="st" id="sc2"></span>
+        </div>
+      </div>
+    </div>
+    <div id="typ"><div class="td"></div><div class="td"></div><div class="td"></div></div>
+  </div>
+
+  <button id="scb" aria-label="Scroll to latest">↓</button>
+
+  <div id="cmp">
+    <div id="cs" aria-live="polite"></div>
+    <div id="cr">
+      <button id="micbtn" class="ib" aria-pressed="false" aria-label="Hold to record. Space shortcut.">🎤</button>
+      <textarea id="ti" rows="1" placeholder="Message" aria-label="Type a message. Ctrl+Enter to send."></textarea>
+      <button id="sndbtn" class="ib" aria-label="Send" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let apiKey=localStorage.getItem('sck')||'';
+let mediaRec=null,chunks=[],recording=false,voices=[],activeSpk=null;
+let analyser=null,raf=null;
+let recog=null,nativeSTT=false,fBuf='',iTxt='';
+let silTimer=null,silStart=null,silOn=false,SIL=3000;
+let lang='en',readingAll=false;
+const CIRC=34.6;
+const store=[];
+let mid=0;
+
+/* ══════════════════════════════════════
+   TRANSLATION ENGINE
+   Tier 1: Chrome AI Translator API
+   Tier 2: OpenAI gpt-4o-mini
+   Tier 3: return original + badge [not translated]
+══════════════════════════════════════ */
+let chromeTranslatorCache={};   // keyed by "src-tgt"
+let chromeAIAvailable=false;
+let chromeAIChecked=false;
+
+async function checkChromeAI(){
+  if(chromeAIChecked)return chromeAIAvailable;
+  chromeAIChecked=true;
+  try{
+    if(!('Translator' in self)){chromeAIAvailable=false;return false;}
+    // check en<->ja pair
+    const a=await Translator.availability({sourceLanguage:'en',targetLanguage:'ja'});
+    chromeAIAvailable=(a!=='unavailable');
+    return chromeAIAvailable;
+  }catch(e){chromeAIAvailable=false;return false;}
+}
+
+async function getChromeTranslator(src,tgt){
+  const key=`${src}-${tgt}`;
+  if(chromeTranslatorCache[key])return chromeTranslatorCache[key];
+  const t=await Translator.create({sourceLanguage:src,targetLanguage:tgt});
+  if(t.ready)await t.ready;
+  chromeTranslatorCache[key]=t;
+  return t;
+}
+
+// Detect language of text (Chrome AI LanguageDetector or simple heuristic)
+async function detectLang(text){
+  try{
+    if('LanguageDetector' in self){
+      const d=await LanguageDetector.create();
+      if(d.ready)await d.ready;
+      const r=await d.detect(text);
+      if(r&&r[0])return r[0].detectedLanguage;
+    }
+  }catch(e){}
+  // Fallback: simple JP char detection
+  return /[\u3040-\u30FF\u4E00-\u9FFF]/.test(text)?'ja':'en';
+}
+
+async function translateText(text,targetLang){
+  if(!text||!text.trim())return{text,engine:'none'};
+  // Detect source
+  const srcLang=await detectLang(text);
+  if(srcLang===targetLang)return{text,engine:'same'};// already target lang
+
+  // Tier 1: Chrome AI
+  try{
+    const ok=await checkChromeAI();
+    if(ok){
+      const t=await getChromeTranslator(srcLang,targetLang);
+      const result=await t.translate(text);
+      return{text:result,engine:'chrome',src:srcLang};
+    }
+  }catch(e){console.warn('Chrome AI translate failed:',e);}
+
+  // Tier 2: OpenAI gpt-4o-mini
+  if(apiKey){
+    try{
+      const tgtName=targetLang==='ja'?'Japanese':'English';
+      const res=await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'gpt-4o-mini',
+          messages:[
+            {role:'system',content:`Translate the following text to ${tgtName}. Reply with only the translated text, no explanations.`},
+            {role:'user',content:text}
+          ],
+          max_tokens:300,temperature:0
+        })
+      });
+      if(res.ok){
+        const d=await res.json();
+        const result=d.choices?.[0]?.message?.content?.trim();
+        if(result)return{text:result,engine:'oai',src:srcLang};
+      }
+    }catch(e){console.warn('OpenAI translate failed:',e);}
+  }
+
+  // Tier 3: return original
+  return{text,engine:'none',src:srcLang};
+}
+
+/* ══════════════════════════════════════
+   Update translation status UI
+══════════════════════════════════════ */
+async function updateTRStatus(){
+  const box=$('tr-status-box');
+  const badge=$('tb');
+  const ok=await checkChromeAI();
+  if(ok){
+    box.className='tr-status chrome';
+    box.textContent='Chrome AI Translator ready — on-device · free · offline after first load';
+    badge.textContent='CHROME AI';badge.className='chrome';
+  }else if(apiKey){
+    box.className='tr-status oai';
+    box.textContent='Chrome AI unavailable. Using OpenAI gpt-4o-mini as translation fallback.';
+    badge.textContent='OAI TR';badge.className='oai';
+  }else{
+    box.className='tr-status';
+    box.textContent='No translation available. Chrome AI needs Chrome 138+ with flags enabled. Or add OpenAI key.';
+    badge.textContent='NO TR';badge.className='none';
+  }
+}
+updateTRStatus();
+
+/* ══ i18n ══ */
+const TX={
+  en:{sub_n:'live STT · browser TTS',sub_w:'whisper · browser TTS',sub_o:'text only',
+    ph:'Message',e1:'No messages yet.',e2:'Hold 🎤 for voice · type to text.',
+    listen:'listening…',read:'READ ALL',stop:'STOP',
+    xscribe:'Transcribe',xscribing:'…',xscribed:'Transcribed ✓',
+    no_spch:'No speech.',mic_err:'Mic error.',test:'Hello — SatChat is working.'},
+  ja:{sub_n:'リアルタイムSTT · ブラウザTTS',sub_w:'Whisper STT · ブラウザTTS',sub_o:'テキストのみ',
+    ph:'メッセージ',e1:'メッセージはまだありません。',e2:'🎤 を長押しで音声送信',
+    listen:'聞いています…',read:'全て読む',stop:'停止',
+    xscribe:'文字起こし',xscribing:'…',xscribed:'完了 ✓',
+    no_spch:'音声なし',mic_err:'マイクエラー',test:'こんにちは — SatChatが動作しています。'}
+};
+const t=k=>TX[lang][k]||TX.en[k]||k;
+function ann(m){const e=$('ann');e.textContent='';requestAnimationFrame(()=>e.textContent=m);}
+
+/* ══ TTS ══ */
+function loadV(){
+  voices=window.speechSynthesis.getVoices();
+  const s=$('vs');s.innerHTML='';
+  if(!voices.length){s.innerHTML='<option>Loading…</option>';return;}
+  voices.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;if(v.default)o.selected=true;s.appendChild(o);});
+}
+loadV();window.speechSynthesis.onvoiceschanged=loadV;
+$('rs').addEventListener('input',e=>$('ro').textContent=parseFloat(e.target.value).toFixed(1)+'×');
+$('tv').addEventListener('click',()=>speakText(t('test')));
+$('sv2').addEventListener('click',()=>{window.speechSynthesis.cancel();if(activeSpk){activeSpk.classList.remove('on');activeSpk=null;}if(readingAll){readingAll=false;updRA();}});
+
+// Speak with optional translate-first
+async function speakText(text,btn,skipTranslate=false){
+  if(!text)return;
+  // If in JP mode and text appears to be EN → translate first
+  let toSpeak=text;
+  if(!skipTranslate&&lang==='ja'){
+    const srcLang=await detectLang(text);
+    if(srcLang!=='ja'){
+      const result=await translateText(text,'ja');
+      if(result.engine!=='none')toSpeak=result.text;
+    }
+  }else if(!skipTranslate&&lang==='en'){
+    const srcLang=await detectLang(text);
+    if(srcLang!=='en'){
+      const result=await translateText(text,'en');
+      if(result.engine!=='none')toSpeak=result.text;
+    }
+  }
+  window.speechSynthesis.cancel();
+  if(activeSpk){activeSpk.classList.remove('on');activeSpk=null;}
+  const u=new SpeechSynthesisUtterance(toSpeak);
+  const vi=parseInt($('vs').value);
+  if(!isNaN(vi)&&voices[vi])u.voice=voices[vi];
+  u.rate=parseFloat($('rs').value);
+  u.lang=lang==='ja'?'ja-JP':'en-US';
+  if(btn){btn.classList.add('on');activeSpk=btn;}
+  return new Promise(res=>{
+    u.onend=()=>{if(btn)btn.classList.remove('on');if(activeSpk===btn)activeSpk=null;res();};
+    u.onerror=()=>res();
+    window.speechSynthesis.speak(u);
+  });
+}
+
+/* ══ Read All ══ */
+function updRA(){$('ra').classList.toggle('on',readingAll);$('ra-l').textContent=readingAll?t('stop'):t('read');}
+$('ra').addEventListener('click',async()=>{
+  if(readingAll){window.speechSynthesis.cancel();readingAll=false;updRA();return;}
+  // Collect all readable text from the DOM in order:
+  // text bubbles (.tb) + transcribed audio (.xtxt.on)
+  const bubbles=Array.from(logEl.querySelectorAll('.brow'));
+  const texts=[];
+  for(const row of bubbles){
+    const tb=row.querySelector('.tb');
+    if(tb&&tb.textContent.trim())texts.push(tb.textContent.trim());
+    else{
+      const xt=row.querySelector('.xtxt.on');
+      if(xt&&xt.textContent.trim())texts.push(xt.textContent.trim());
+    }
+  }
+  if(!texts.length){ann('Nothing to read.');return;}
+  readingAll=true;updRA();
+  for(const txt of texts){
+    if(!readingAll)break;
+    await speakText(txt);
+    await new Promise(r=>setTimeout(r,280));
+  }
+  readingAll=false;updRA();
+});
+
+/* ══ Lang toggle ══ */
+$('ben').addEventListener('click',()=>setLang('en'));
+$('bja').addEventListener('click',()=>setLang('ja'));
+function setLang(l){
+  lang=l;
+  ['ben','bja'].forEach(id=>{const b=$(id);b.classList.toggle('on',id===`b${l}`);b.setAttribute('aria-pressed',id===`b${l}`);});
+  $('ti').placeholder=t('ph');
+  const e1=$('ep1'),e2=$('ep2');if(e1)e1.textContent=t('e1');if(e2)e2.textContent=t('e2');
+  $('ra-l').textContent=t('read');
+  if(recog)recog.lang=l==='ja'?'ja-JP':'en-US';
+  detectEng();ann(l==='ja'?'日本語モード':'English mode');
+}
+
+/* ══ Settings ══ */
+$('sb').addEventListener('click',()=>{
+  const d=$('dr'),o=d.classList.toggle('open');
+  d.hidden=!o;$('sb').setAttribute('aria-expanded',o);$('sb').classList.toggle('open',o);
+  if(o){setTimeout(()=>$('ki').focus(),80);updateTRStatus();}
+});
+$('dr').hidden=true;
+$('ks').addEventListener('click',()=>{
+  const v=$('ki').value.trim();if(!v.startsWith('sk-')){ann('Key must start with sk-');return;}
+  localStorage.setItem('sck',v);apiKey=v;$('ki').value='';$('ki').placeholder='Saved ✓';detectEng();updateTRStatus();
+});
+$('kc').addEventListener('click',()=>{localStorage.removeItem('sck');apiKey='';$('ki').placeholder='sk-…';detectEng();updateTRStatus();});
+$('ss').addEventListener('change',()=>SIL=parseInt($('ss').value)||0);
+
+function detectEng(){
+  const h=!!(window.SpeechRecognition||window.webkitSpeechRecognition);nativeSTT=h;
+  const b=$('eb'),s=$('hs');
+  if(h){b.textContent='LIVE STT';b.className='nat';s.textContent=t('sub_n');}
+  else if(apiKey){b.textContent='WHISPER';b.className='whi';s.textContent=t('sub_w');}
+  else{b.textContent='NO STT';b.className='off';s.textContent=t('sub_o');}
+}
+detectEng();
+
+/* ══ Silence ring ══ */
+function startSil(){if(!SIL)return;clearSil();silOn=true;silStart=Date.now();tickSil();}
+function clearSil(){silOn=false;if(silTimer){clearTimeout(silTimer);silTimer=null;}$('sa').style.strokeDashoffset=CIRC;$('sr2').classList.remove('on');$('sc2').textContent='';}
+function tickSil(){
+  if(!silOn||!SIL)return;
+  const el=Date.now()-silStart,r=Math.min(el/SIL,1);
+  $('sa').style.strokeDashoffset=CIRC*(1-r);$('sr2').classList.add('on');
+  const rem=Math.ceil((SIL-el)/1000);$('sc2').textContent=rem>0?rem+'s':'';
+  if(r<1)silTimer=setTimeout(tickSil,80);
+  else{silOn=false;$('sr2').classList.remove('on');commitSpeech();}
+}
+function commitSpeech(){
+  const text=(fBuf+(iTxt||'')).trim();
+  // Must set recording=false BEFORE recog.stop() so onend handler doesn't restart
+  recording=false;
+  if(recog){try{recog.stop();}catch(e){}}
+  if(raf)cancelAnimationFrame(raf);analyser=null;$('wv').classList.remove('on');
+  clearInt();clearSil();
+  fBuf='';iTxt='';setMicIdle();
+  if(text)addMsg(text,'vn',true,null,(Date.now()-recStart)/1000);
+  else ann(t('no_spch'));
+}
+
+/* ══ Messages ══ */
+const logEl=$('log');
+function removeEmp(){const e=$('emp');if(e)e.remove();}
+
+function genBars(n,sent){
+  return Array.from({length:n},()=>{
+    const h=4+Math.random()*15;
+    const c=sent?'rgba(25,70,50,.3)':'rgba(70,70,65,.25)';
+    return `<div class="abar" style="height:${h}px;background:${c}"></div>`;
+  }).join('');
+}
+function fmtDur(s){if(!s||s<0.1)return '—';return s<60?Math.round(s)+'s':Math.floor(s/60)+'m '+Math.round(s%60)+'s';}
+function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';} 
+function badgeHTML(engine){
+  if(engine==='chrome')return '<span class="tr-badge chrome">Chrome AI</span>';
+  if(engine==='oai')return '<span class="tr-badge oai">OpenAI</span>';
+  return '<span class="tr-badge none">not translated</span>';
+}
+
+// Attach translation strip to a bubble row (text mode)
+async function attachTranslation(stripEl,text,sent){
+  if(!$('atr').checked)return;
+  const tgtLang=lang==='ja'?'ja':'en';
+  // show loading
+  stripEl.innerHTML=`<div class="tr-loading"><span class="spin">⟳</span> translating…</div>`;
+  stripEl.classList.add('on');
+  const result=await translateText(text,tgtLang);
+  if(result.engine==='same'||result.engine==='none'&&result.text===text){
+    stripEl.classList.remove('on');return; // no translation needed or failed silently
+  }
+  stripEl.innerHTML=`
+    <div class="tr-text">${esc(result.text)}</div>
+    <div class="tr-meta">${badgeHTML(result.engine)}<span class="tr-src">${result.engine==='none'?'original':''}</span></div>`;
+  stripEl.classList.add('on');
+}
+
+async function addMsg(text,type,sent,blob,durSec){
+  removeEmp();mid++;
+  const id='m'+mid;
+  store.push({id,text,type,sent});
+  const row=document.createElement('div');
+  row.className='brow '+(sent?'s':'r');
+  row.id=id;
+  const ts=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const ptxt={vn:'live voice',wh:'whisper',tx:'text'};
+  const pcls={vn:'vn',wh:'wh',tx:'tx'};
+
+  if(type==='tx'){
+    row.setAttribute('aria-label',(sent?'You':'Partner')+': '+text);
+    row.innerHTML=`
+      <div class="tb">${esc(text)}</div>
+      <div class="tr-strip" aria-live="polite"></div>
+      <div class="bm">
+        <span class="bp tx">text</span>
+        <span>${ts}</span>
+        <button class="spk" aria-label="Read aloud">🔊</button>
+      </div>`;
+    const spkBtn=row.querySelector('.spk');
+    spkBtn.addEventListener('click',function(){speakText(text,this);});
+    if($('asp').checked&&text)speakText(text,null,false);
+    // Auto-translate if received
+    if(!sent&&text)attachTranslation(row.querySelector('.tr-strip'),text,sent);
+
+  }else{
+    row.setAttribute('aria-label',(sent?'You':'Partner')+': Voice message '+(durSec?fmtDur(durSec):''));
+    const hasBlob=!!(blob);
+    const hasKey=!!(apiKey);
+    row.innerHTML=`
+      <div class="ab">
+        <div class="abt">
+          <button class="pbtn" aria-label="${hasBlob?'Play':'No playback in live STT mode'}">▶</button>
+          <div class="abars">${genBars(20,sent)}</div>
+          <span class="adur">${fmtDur(durSec)}</span>
+        </div>
+        <div class="abx">
+          <button class="xbtn${!hasBlob&&!text?' disabled':''}" aria-label="Transcribe voice message">${t('xscribe')}</button>
+          <div class="xtxt" aria-live="polite"></div>
+          <div class="x-tr-strip" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="bm">
+        <span class="bp ${pcls[type]||'vn'}">${ptxt[type]||'voice'}</span>
+        <span>${ts}</span>
+      </div>`;
+
+    // Play button
+    const pbtn=row.querySelector('.pbtn');
+    if(blob){
+      const url=URL.createObjectURL(blob);
+      const audio=new Audio(url);
+      const bars=row.querySelectorAll('.abar');
+      pbtn.addEventListener('click',()=>{
+        if(!audio.paused){
+          audio.pause();audio.currentTime=0;pbtn.textContent='▶';pbtn.classList.remove('playing');
+          bars.forEach(b=>b.classList.remove('lit'));
+        }else{
+          document.querySelectorAll('.pbtn.playing').forEach(b=>{if(b!==pbtn)b.click();});
+          audio.play();pbtn.textContent='⏸';pbtn.classList.add('playing');
+          let ba=null;
+          function animB(){
+            if(audio.paused){bars.forEach(b=>b.classList.remove('lit'));return;}
+            const prog=audio.duration?audio.currentTime/audio.duration:0;
+            const lit=Math.round(prog*bars.length);
+            bars.forEach((b,i)=>b.classList.toggle('lit',i<lit));
+            ba=requestAnimationFrame(animB);
+          }
+          animB();
+          audio.onended=()=>{pbtn.textContent='▶';pbtn.classList.remove('playing');bars.forEach(b=>b.classList.remove('lit'));if(ba)cancelAnimationFrame(ba);};
+        }
+      });
+    }else{
+      pbtn.style.opacity='.3';pbtn.title='No playback in live STT mode';
+    }
+
+    // Transcribe button
+    const xbtn=row.querySelector('.xbtn');
+    const xtxt=row.querySelector('.xtxt');
+    const xtr=row.querySelector('.x-tr-strip');
+
+    const showTranscript=async(transcriptText)=>{
+      xtxt.textContent=transcriptText;xtxt.classList.add('on');
+      xbtn.textContent=t('xscribed');xbtn.classList.remove('busy');xbtn.classList.add('done');
+      const rec=store.find(m=>m.id===id);if(rec)rec.text=transcriptText;
+      // Translate the transcript
+      const tgtLang=lang==='ja'?'ja':'en';
+      const srcLang=await detectLang(transcriptText);
+      if(srcLang!==tgtLang){
+        xtr.innerHTML=`<div class="tr-loading"><span class="spin">⟳</span> translating…</div>`;xtr.classList.add('on');
+        const result=await translateText(transcriptText,tgtLang);
+        if(result.engine!=='none'&&result.text!==transcriptText){
+          xtr.innerHTML=`<div class="x-tr-text">${esc(result.text)}</div>
+            <div class="tr-meta">${badgeHTML(result.engine)}</div>`;
+        }else{xtr.classList.remove('on');}
+      }
+    };
+
+    if(text){
+      // Native STT — already have transcript
+      showTranscript(text);
+    }else if(blob&&hasKey){
+      xbtn.addEventListener('click',async()=>{
+        xbtn.textContent=t('xscribing');xbtn.classList.add('busy');xbtn.disabled=true;
+        try{
+          const mime=blob.type||'audio/webm';
+          const ext=mime.includes('webm')?'webm':mime.includes('ogg')?'ogg':'mp4';
+          const fd=new FormData();
+          fd.append('file',blob,`audio.${ext}`);fd.append('model','whisper-1');
+          if(lang==='ja')fd.append('language','ja');
+          const res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:fd});
+          if(!res.ok){const er=await res.json().catch(()=>({}));throw new Error(er?.error?.message||`HTTP ${res.status}`);}
+          const result=(await res.json()).text;
+          await showTranscript(result);
+        }catch(err){
+          xbtn.textContent=t('xscribe');xbtn.classList.remove('busy');xbtn.disabled=false;
+          ann('Transcription failed: '+err.message);
+        }
+      });
+    }else{
+      xbtn.style.opacity='.38';xbtn.style.cursor='default';
+      xbtn.title=!hasKey?'Add OpenAI key in settings':'No audio to transcribe';
+    }
+  }
+
+  logEl.insertBefore(row,$('ir'));
+  scrollBot();
+  return id;
+}
+
+function showInt(txt){
+  removeEmp();$('ib2').textContent=txt||'…';$('itxt').textContent=t('listen');
+  const r=$('ir');r.classList.add('on');r.removeAttribute('aria-hidden');
+  logEl.insertBefore(r,logEl.querySelector('#typ'));scrollBot();
+}
+function clearInt(){$('ib2').textContent='';$('ir').classList.remove('on');$('ir').setAttribute('aria-hidden','true');}
+
+logEl.addEventListener('scroll',()=>{const ab=logEl.scrollHeight-logEl.scrollTop-logEl.clientHeight<60;$('scb').classList.toggle('on',!ab);});
+$('scb').addEventListener('click',()=>scrollBot(true));
+function scrollBot(f){const ab=logEl.scrollHeight-logEl.scrollTop-logEl.clientHeight<80;if(ab||f)logEl.scrollTo({top:logEl.scrollHeight,behavior:'smooth'});}
+
+/* ══ Text compose ══ */
+const ta=$('ti');
+ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,100)+'px';$('sndbtn').disabled=!ta.value.trim();});
+ta.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();sendTxt();}});
+$('sndbtn').addEventListener('click',()=>{addRip($('sndbtn'));sendTxt();});
+function sendTxt(){const txt=ta.value.trim();if(!txt)return;addMsg(txt,'tx',true);ta.value='';ta.style.height='auto';$('sndbtn').disabled=true;ta.focus();}
+function addRip(btn){const r=document.createElement('span');r.className='rip';btn.style.position='relative';btn.style.overflow='hidden';btn.appendChild(r);setTimeout(()=>r.remove(),420);}
+
+/* ══ Waveform ══ */
+const wvC=$('wv'),wctx=wvC.getContext('2d');
+function drawWave(){
+  if(!analyser){raf=null;return;}
+  const buf=new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(buf);
+  wctx.clearRect(0,0,40,18);wctx.beginPath();wctx.strokeStyle='rgba(237,245,239,.8)';wctx.lineWidth=1.3;
+  const sl=buf.length/40;
+  for(let i=0;i<40;i++){const v=buf[Math.floor(i*sl)]/128-1;const y=9+v*7;i===0?wctx.moveTo(i,y):wctx.lineTo(i,y);}
+  wctx.stroke();raf=requestAnimationFrame(drawWave);
+}
+
+/* ══ Native STT ══ */
+function initSTT(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
+  recog=new SR();recog.lang=lang==='ja'?'ja-JP':'en-US';
+  recog.continuous=true;recog.interimResults=true;recog.maxAlternatives=1;
+  recog.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const s=e.results[i][0].transcript;
+      if(e.results[i].isFinal){fBuf+=s+' ';clearSil();}else interim+=s;
+    }
+    iTxt=interim;
+    const d=(fBuf+interim).trim();if(d)showInt(d);
+    if(SIL&&recording)startSil();
+  };
+  recog.onerror=e=>{
+    if(e.error==='no-speech'){
+      // Only (re)start silence timer if still recording and not already counting down
+      if(recording&&SIL&&!silOn)startSil();
+      return;
+    }
+    if(e.error==='not-allowed'){ann(t('mic_err'));recording=false;setMicIdle();clearInt();clearSil();}
+  };
+  recog.onend=()=>{if(recording){try{recog.start();}catch(e){}}};
+  return true;
+}
+function getMime(){return['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t))||'';}
+
+/* ══ Mic UI ══ */
+function setActive(){
+  $('micbtn').classList.add('rec');$('micbtn').setAttribute('aria-pressed','true');$('micbtn').textContent='⏹';
+  $('cs').innerHTML=`<span class="ld"></span><span>${t('listen')}</span>`;$('cs').classList.add('on');
+  recording=true;
+}
+function setMicIdle(){
+  $('micbtn').classList.remove('rec','xc');$('micbtn').setAttribute('aria-pressed','false');$('micbtn').textContent='🎤';$('micbtn').disabled=false;
+  $('cs').textContent='';$('cs').classList.remove('on');recording=false;clearSil();
+}
+
+let recStart=0;
+async function startRec(){
+  if(recording)return;
+  if(recog)recog.lang=lang==='ja'?'ja-JP':'en-US';
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    analyser=ac.createAnalyser();analyser.fftSize=64;
+    ac.createMediaStreamSource(stream).connect(analyser);
+    wvC.classList.add('on');drawWave();recStart=Date.now();
+    if(nativeSTT){
+      if(!recog&&!initSTT())nativeSTT=false;
+    }
+    if(nativeSTT){
+      fBuf='';iTxt='';try{recog.start();}catch(e){}
+      setActive();ann(t('listen'));if(SIL)startSil();
+    }else{
+      if(!apiKey){
+        stream.getTracks().forEach(t=>t.stop());analyser=null;wvC.classList.remove('on');if(raf)cancelAnimationFrame(raf);
+        $('dr').classList.add('open');$('dr').hidden=false;$('sb').setAttribute('aria-expanded','true');$('sb').classList.add('open');
+        setTimeout(()=>$('ki').focus(),80);return;
+      }
+      chunks=[];
+      mediaRec=new MediaRecorder(stream,{mimeType:getMime()});
+      mediaRec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+      mediaRec.start(100);setActive();ann(t('listen'));
+    }
+  }catch(err){ann(t('mic_err')+' '+err.message);}
+}
+
+async function stopRec(){
+  if(!recording)return;
+  if(raf)cancelAnimationFrame(raf);analyser=null;wvC.classList.remove('on');clearSil();
+  const dur=(Date.now()-recStart)/1000;
+  if(nativeSTT){
+    recording=false; // set BEFORE recog.stop() so onend doesn't restart
+    try{recog.stop();}catch(e){}
+    const text=(fBuf+iTxt).trim();clearInt();setMicIdle();
+    if(text)addMsg(text,'vn',true,null,dur);else ann(t('no_spch'));
+    fBuf='';iTxt='';
+  }else{
+    recording=false;
+    $('micbtn').classList.remove('rec');$('micbtn').classList.add('xc');$('micbtn').textContent='⏳';$('micbtn').disabled=true;
+    $('cs').textContent='Sending…';
+    if(mediaRec){
+      mediaRec.stop();mediaRec.stream.getTracks().forEach(t=>t.stop());
+      mediaRec.onstop=()=>{
+        const mime=getMime(),ext=mime.includes('webm')?'webm':mime.includes('ogg')?'ogg':'mp4';
+        const blob=new Blob(chunks,{type:mime});
+        $('cs').textContent='';$('cs').classList.remove('on');
+        addMsg(null,'wh',true,blob,dur);
+        setMicIdle();
+      };
+    }else setMicIdle();
+  }
+}
+
+const mbtn=$('micbtn');
+mbtn.addEventListener('mousedown',e=>{e.preventDefault();startRec();});
+mbtn.addEventListener('mouseup',stopRec);
+mbtn.addEventListener('mouseleave',()=>{if(recording)stopRec();});
+mbtn.addEventListener('touchstart',e=>{e.preventDefault();startRec();},{passive:false});
+mbtn.addEventListener('touchend',e=>{e.preventDefault();stopRec();},{passive:false});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&document.activeElement!==ta&&!e.repeat){e.preventDefault();if(!recording)startRec();}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'&&document.activeElement!==ta){e.preventDefault();if(recording)stopRec();}});
+
+initSTT();detectEng();
+ann('SatChat v0.9 ready. Chrome AI translation active when available.');
+</script>
+</body>
+</html>
